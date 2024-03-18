@@ -1,0 +1,12 @@
+syntax= "proto3";
+
+package pb;
+
+option go_package = "ms_auth/pb";
+
+message User {
+    string name = 1;
+    string email = 2;
+    string password = 3;
+}
+

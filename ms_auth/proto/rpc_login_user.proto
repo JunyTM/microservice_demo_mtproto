@@ -1,0 +1,19 @@
+syntax="proto3";
+
+package pb;
+
+import "user.proto";
+
+option go_package = "ms_auth/pb";
+
+message LoginMessage {
+    string email = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    User user = 1;
+    string session_id = 2;
+    string access_token = 3;
+}
+
