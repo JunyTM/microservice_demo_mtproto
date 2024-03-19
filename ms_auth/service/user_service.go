@@ -27,7 +27,7 @@ func (s *userService) Login(email string, password string) (*model.User, error) 
 	if err := ComparePassword(password, user.Password); err != nil {
 		return nil, errors.New("=> Password not match")
 	}
-
+	
 	return user, nil
 }
 
