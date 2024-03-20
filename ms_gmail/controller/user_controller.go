@@ -7,14 +7,12 @@ import (
 	"log"
 	"ms_gmail/model"
 	"ms_gmail/pb"
-	"ms_gmail/utils"
+	"ms_gmail/service"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/go-chi/render"
-	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -22,10 +20,12 @@ import (
 type UserController interface {
 	Login(w http.ResponseWriter, r *http.Request)
 	Register(w http.ResponseWriter, r *http.Request)
-	CreateDataUsers(w http.ResponseWriter, r *http.Request)
+	GenerateUsers(w http.ResponseWriter, r *http.Request)
 }
 
-type userController struct{}
+type userController struct {
+	userWorker service.WorkerInterface
+}
 
 func (c *userController) Login(w http.ResponseWriter, r *http.Request) {
 	var loginPayload model.LoginPayload
@@ -91,8 +91,7 @@ func (c *userController) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	render.JSON(w, r, httpResponse)
 }
-
-func (c *userController) CreateDataUsers(w http.ResponseWriter, r *http.Request) {
+func (c *userController) GenerateUsers(w http.ResponseWriter, r *http.Request) {
 	/*
 		workerCount - the number of workers in worker pool.
 		workLoad - the jobs in single worker.
@@ -122,76 +121,8 @@ func (c *userController) CreateDataUsers(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var wg sync.WaitGroup
-	chanelDatas := make(chan []model.RegistPayload, workerCountInt)
-	for i := 1; i <= workerCountInt; i++ {
-		wg.Add(1)
-		go func(chanelData chan<- []model.RegistPayload) {
-			var data []model.RegistPayload
-			for j := 1; j <= workLoadInt; j++ {
-				temp := model.RegistPayload{
-					Name:     utils.RandomString(8),
-					Email:    utils.RandomString(20),
-					Password: "123456",
-				}
-				data = append(data, temp)
-			}
-			chanelData <- data
-			wg.Done()
-		}(chanelDatas)
-	}
-	wg.Wait()
-
-	// Write to the excel
-	f := excelize.NewFile()
-
-	var index int = 1
-	columName := []interface{}{
-		"ID",
-		"Name",
-		"Email",
-		"Password",
-	}
-	cell, err := excelize.CoordinatesToCellName(1, index)
+	err = c.userWorker.Start(workerCountInt, workLoadInt, "Sheet1", "excel/DataBenchmark.xlsx")
 	if err != nil {
-		InternalServerError(w, r, err)
-		return
-	}
-	f.SetSheetRow("Sheet1", cell, &columName)
-	index += 1
-
-	log.Println("Make data successfull")
-	for {
-		select {
-		case chanelData := <-chanelDatas:
-			for _, data := range chanelData {
-				cell, err := excelize.CoordinatesToCellName(1, index)
-				if err != nil {
-					InternalServerError(w, r, err)
-					return
-				}
-
-				temp := []interface{}{
-					index,
-					data.Name,
-					data.Email,
-					data.Password,
-				}
-				f.SetSheetRow("Sheet1", cell, &temp)
-				index += 1
-			}
-		default:
-			goto SAVE
-		}
-	}
-
-SAVE:
-	// Save spreadsheet by the given path.
-	if err := f.SaveAs("excel/DataBenchmark.xlsx"); err != nil {
-		InternalServerError(w, r, err)
-		return
-	}
-	if err := f.Close(); err != nil {
 		InternalServerError(w, r, err)
 		return
 	}
@@ -205,7 +136,9 @@ SAVE:
 }
 
 func NewUserController() UserController {
-	return &userController{}
+	return &userController{
+		userWorker: service.NewUserPool(),
+	}
 }
 
 func BadRequest(w http.ResponseWriter, r *http.Request, err error) {

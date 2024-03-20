@@ -29,6 +29,6 @@ func Router() http.Handler {
 	userController := controller.NewUserController()
 	r.Post("/user/resgister", userController.Register)
 	r.Post("/user/login", userController.Login)
-	r.Get("/user/workpool", userController.CreateDataUsers)
+	r.Get("/user/gen-data", userController.GenerateUsers)
 	return r
 }
