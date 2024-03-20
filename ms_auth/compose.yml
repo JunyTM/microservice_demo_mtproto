@@ -1,0 +1,16 @@
+version: "3.3"
+
+services:
+  my_sql:
+    image: mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=147563
+      - MYSQL_DATABASE=app_auth
+      - MYSQL_USER=users
+      - MYSQL_PASSWORD=147563
+    ports:
+      - "3306:3306"
+    volumes: ./db /var/lib/
+
+# docker run --name my_sql -e MYSQL_ROOT_PASSWORD=147563 -e MYSQL_PASSWORD=147563 -e MYSQL_USER=users -e MYSQL_DATABASE=app_auth -p 3306:3306  -d mysql:latest

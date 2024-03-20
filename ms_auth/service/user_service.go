@@ -12,13 +12,22 @@ import (
 type UserService interface {
 	Login(email string, password string) (*model.User, error)
 	CreateUser(name string, email string, password string) (*model.User, error)
+	
 }
 
 type userService struct {
 	db *gorm.DB
+	cacheService
 }
 
 func (s *userService) Login(email string, password string) (*model.User, error) {
+	dataMem, isCaching :=  s.CheckInMem(email)
+	if isCaching != nil {
+		goto INDB
+	}
+	return dataMem, nil
+
+INDB:
 	var user *model.User
 	if err := s.db.Model(&model.User{}).Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, errors.New("=> User not found in database")
@@ -27,7 +36,8 @@ func (s *userService) Login(email string, password string) (*model.User, error) 
 	if err := ComparePassword(password, user.Password); err != nil {
 		return nil, errors.New("=> Password not match")
 	}
-	
+
+	s.AddInMem(user)
 	return user, nil
 }
 

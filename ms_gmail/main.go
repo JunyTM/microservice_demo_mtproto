@@ -1,34 +1,21 @@
 package main
 
 import (
-	"context"
-	"flag"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
-	"ms_gmail/pb"
+	"ms_gmail/router"
+	"net/http"
 	"time"
 )
 
 func main() {
-	// Your code here
-	flag.Parse()
-	// Set up a connection to the server.
-	conn, err := grpc.Dial("0.0.0.0:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := pb.NewAuthenClient(conn)
+	log.Printf("Starting micro_gmail: port - %s\n", "8080")
+	s := http.Server{
+		Addr:    ":8080",
+		Handler: router.Router(),
 
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	r, err := c.Login(ctx, &pb.LoginMessage{Email: "manhtokim@gmail.com", Password: "123456"})
-	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		// Good practice: enforce timeouts for servers you create!
+		WriteTimeout: 600 * time.Second,
+		ReadTimeout:  600 * time.Second,
 	}
-	log.Printf("Greeting: %s", r.GetAccessToken())
-
-	
+	log.Fatal(s.ListenAndServe())
 }

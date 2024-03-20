@@ -9,20 +9,23 @@ import (
 )
 
 const (
-	msql_dns = "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+	msql_dns = "users:147563@tcp(0.0.0.0:3306)/app_auth?charset=utf8mb4&parseTime=True&loc=Local"
 )
 
 var (
-	db         *gorm.DB
-	cache_user map[string]model.User
+	db        *gorm.DB
+	cacheUser map[string]model.User
 )
 
 func init() {
+	// Make memcache
+	cacheUser = make(map[string]model.User)
+	
 	// load db connection
 	ConnectDatabases()
 
 	isMigrate := flag.Bool("db", false, "Migrate database")
-	isLoadCache := flag.Bool("cache", false, "Load cache")
+	isLoadCache := flag.Bool("cache", true, "Load cache")
 	flag.Parse()
 
 	// migrate database
@@ -37,26 +40,22 @@ func GetDB() *gorm.DB {
 	return db
 }
 
+func GetCache() map[string]model.User {
+	return cacheUser
+}
+
 func loadMemoryCache(isLoadCache bool) {
 	if !isLoadCache {
 		return
 	}
-
 	var users []model.User
 	err := db.Model(&model.User{}).Find(&users).Order("id").Error
 	if err != nil {
 		log.Println("=> Warrning: Cannot load MemCache")
+		return
 	}
 
 	for i := range users {
-		cache_user[users[i].Email] = users[i]
+		cacheUser[users[i].Email] = users[i]
 	}
-}
-
-func CacheInMem(key string, value model.User) {
-	cache_user[key] = value
-}
-
-func GetCache() map[string]model.User {
-	return cache_user
 }
