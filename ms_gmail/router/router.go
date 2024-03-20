@@ -23,7 +23,7 @@ func Router() http.Handler {
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		// MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
 	userController := controller.NewUserController()

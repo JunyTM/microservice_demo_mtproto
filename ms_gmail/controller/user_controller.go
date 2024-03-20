@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"ms_gmail/model"
 	"ms_gmail/pb"
 	"ms_gmail/utils"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-chi/render"
@@ -95,7 +95,7 @@ func (c *userController) Register(w http.ResponseWriter, r *http.Request) {
 func (c *userController) CreateDataUsers(w http.ResponseWriter, r *http.Request) {
 	/*
 		workerCount - the number of workers in worker pool.
-		workLoad - the jobs in single worker. 
+		workLoad - the jobs in single worker.
 	*/
 
 	workerCount := r.URL.Query().Get("workers")
@@ -122,24 +122,77 @@ func (c *userController) CreateDataUsers(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	chanelDatas := make(map[int]chan model.RegistPayload)
+	var wg sync.WaitGroup
+	chanelDatas := make(chan []model.RegistPayload, workerCountInt)
 	for i := 1; i <= workerCountInt; i++ {
-		chanelDatas[i] = make(chan model.RegistPayload, workLoadInt)
-		go func(chanelData chan<- model.RegistPayload) {
+		wg.Add(1)
+		go func(chanelData chan<- []model.RegistPayload) {
+			var data []model.RegistPayload
 			for j := 1; j <= workLoadInt; j++ {
 				temp := model.RegistPayload{
 					Name:     utils.RandomString(8),
 					Email:    utils.RandomString(20),
 					Password: "123456",
 				}
-				chanelData <- temp
+				data = append(data, temp)
 			}
-		}(chanelDatas[i])
+			chanelData <- data
+			wg.Done()
+		}(chanelDatas)
+	}
+	wg.Wait()
+
+	// Write to the excel
+	f := excelize.NewFile()
+
+	var index int = 1
+	columName := []interface{}{
+		"ID",
+		"Name",
+		"Email",
+		"Password",
+	}
+	cell, err := excelize.CoordinatesToCellName(1, index)
+	if err != nil {
+		InternalServerError(w, r, err)
+		return
+	}
+	f.SetSheetRow("Sheet1", cell, &columName)
+	index += 1
+
+	log.Println("Make data successfull")
+	for {
+		select {
+		case chanelData := <-chanelDatas:
+			for _, data := range chanelData {
+				cell, err := excelize.CoordinatesToCellName(1, index)
+				if err != nil {
+					InternalServerError(w, r, err)
+					return
+				}
+
+				temp := []interface{}{
+					index,
+					data.Name,
+					data.Email,
+					data.Password,
+				}
+				f.SetSheetRow("Sheet1", cell, &temp)
+				index += 1
+			}
+		default:
+			goto SAVE
+		}
 	}
 
-	errExport := WriteToExcel(&chanelDatas, workerCountInt, workLoadInt)
-	if errExport != nil {
-		InternalServerError(w, r, errExport)
+SAVE:
+	// Save spreadsheet by the given path.
+	if err := f.SaveAs("excel/DataBenchmark.xlsx"); err != nil {
+		InternalServerError(w, r, err)
+		return
+	}
+	if err := f.Close(); err != nil {
+		InternalServerError(w, r, err)
 		return
 	}
 
@@ -186,57 +239,4 @@ func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
 		Message: err.Error(),
 	}
 	render.JSON(w, r, res)
-}
-
-func WriteToExcel(datas *map[int]chan model.RegistPayload, workerCount, workLoad int) error {
-	// Write to the excel
-	f := excelize.NewFile()
-
-	// Declear the columns names
-	columName := []interface{}{
-		"ID",
-		"Name",
-		"Email",
-		"Password",
-	}
-
-	var indexRow int = 1
-	cell, err := excelize.CoordinatesToCellName(1, indexRow)
-	if err != nil {
-		return errors.New("error get CoordinatesToCellName for column name")
-	}
-	indexRow += 1
-	f.SetSheetRow("Sheet1", cell, &columName)
-
-	for goroutine, chanelData := range *datas {
-		log.Printf("==> Execl routine %d running", goroutine)
-		go func(chanel <-chan model.RegistPayload) {
-			// Write user data to excel
-			for temp := range chanel {
-				if indexRow > (workerCount * workLoad) {
-					return
-				}
-				slices := []interface{}{
-					indexRow,
-					temp.Name,
-					temp.Email,
-					temp.Password,
-				}
-				cell, err := excelize.CoordinatesToCellName(1, indexRow)
-				if err != nil {
-					log.Println("Error get CoordinatesToCellName - user:", temp.Name)
-				}
-				indexRow += 1
-				f.SetSheetRow("Sheet1", cell, &slices)
-			}
-		}(chanelData)
-	}
-	// Save spreadsheet by the given path.
-	if err := f.SaveAs("excel/DataBenchmark.xlsx"); err != nil {
-		return fmt.Errorf("failed to save excel file: %v", err)
-	}
-	if err := f.Close(); err != nil {
-		return fmt.Errorf("failed to close excel file: %v", err)
-	}
-	return nil
 }
