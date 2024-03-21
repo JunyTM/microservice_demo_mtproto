@@ -3,4 +3,7 @@ protoc:
     --go-grpc_out=pb --go-grpc_opt=paths=source_relative \
     proto/*.proto
 
-.PHONE: protoc 
+test:
+    go test -bench=. 
+
+.PHONE: protoc test

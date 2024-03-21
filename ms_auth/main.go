@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"ms_auth/infrastructure"
 	"ms_auth/pb"
 	"ms_auth/service"
 	"net"
@@ -19,7 +18,7 @@ type Server_GRPC_MS_Auth struct {
 }
 
 func (s *Server_GRPC_MS_Auth) Login(ctx context.Context, in *pb.LoginMessage) (*pb.LoginResponse, error) {
-	log.Printf("=> Request Login From: %v\n", in.GetEmail())
+	// log.Printf("=> Request Login From: %v\n", in.GetEmail())
 	result, err := s.userService.Login(in.GetEmail(), in.GetPassword())
 	if err != nil {
 		return nil, err
@@ -53,9 +52,6 @@ func (s *Server_GRPC_MS_Auth) CreateUser(ctx context.Context, in *pb.CreateUserM
 }
 
 func main() {
-	data_cache := infrastructure.GetCache()
-	log.Println("==> memory cache: ", data_cache)
-
 	lis, err := net.Listen("tcp", ":9090")
 	if err != nil {
 		log.Fatalf("failed to listen: %v\n", err)

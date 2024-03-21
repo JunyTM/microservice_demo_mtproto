@@ -3,6 +3,8 @@ package utils
 import (
 	"math/rand"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 const alphabet = "abcdefghijklmnopqrstuvwxy"
@@ -12,11 +14,8 @@ func init() {
 }
 
 func RandomString(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = alphabet[rand.Intn(len(alphabet))]
-	}
-	return string(b)
+	myuuid := uuid.NewV4().String()
+	return myuuid[:length]
 }
 
 func RandomInt(min, max int64) int64 {

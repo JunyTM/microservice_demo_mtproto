@@ -24,7 +24,7 @@ type UserController interface {
 }
 
 type userController struct {
-	userWorker service.WorkerInterface
+	userWorker service.ExcelWorkerInterface
 }
 
 func (c *userController) Login(w http.ResponseWriter, r *http.Request) {

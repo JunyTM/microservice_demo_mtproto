@@ -8,7 +8,7 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-type WorkerInterface interface {
+type ExcelWorkerInterface interface {
 	Start(concurrency, workLoad int, sheetName, path string) error
 }
 
@@ -17,9 +17,10 @@ type UserPool struct {
 	workLoad    int
 	tasksChan   chan []model.RegistPayload
 	wg          sync.WaitGroup
+	mu          sync.Mutex // guards
 }
 
-func NewUserPool() WorkerInterface {
+func NewUserPool() ExcelWorkerInterface {
 	return &UserPool{
 		tasksChan: make(chan []model.RegistPayload),
 	}
@@ -81,7 +82,10 @@ func (p *UserPool) Start(concurrency, workLoad int, sheetName, path string) erro
 
 func WriteDataCell(datas []model.RegistPayload, index *indexCell, pool *UserPool, f *excelize.File, sheetName string) {
 	for _, data := range datas {
+		pool.mu.Lock()
 		idx := index.GetValue()
+		index.Increase()
+		pool.mu.Unlock()
 		cell, err := excelize.CoordinatesToCellName(1, idx)
 		if err != nil {
 			return
@@ -94,7 +98,6 @@ func WriteDataCell(datas []model.RegistPayload, index *indexCell, pool *UserPool
 			data.Password,
 		}
 		f.SetSheetRow(sheetName, cell, &temp)
-		index.Increase()
 	}
 	pool.wg.Done()
 }

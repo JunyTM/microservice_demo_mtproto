@@ -21,7 +21,10 @@ func MigrateDatabases(isMigrate bool) {
 		return
 	}
 
-	err := db.AutoMigrate(&model.User{})
+	err := db.AutoMigrate(
+		&model.User{},
+		&model.CacheMem{},
+	)
 	if err != nil {
 		panic(err)
 	}

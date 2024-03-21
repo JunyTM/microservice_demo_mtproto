@@ -20,7 +20,7 @@ var (
 func init() {
 	// Make memcache
 	cacheUser = make(map[string]model.User)
-	
+
 	// load db connection
 	ConnectDatabases()
 
@@ -48,14 +48,14 @@ func loadMemoryCache(isLoadCache bool) {
 	if !isLoadCache {
 		return
 	}
-	var users []model.User
-	err := db.Model(&model.User{}).Find(&users).Order("id").Error
+	var caches []model.CacheMem
+	err := db.Model(&model.CacheMem{}).Find(&caches).Order("id").Error
 	if err != nil {
 		log.Println("=> Warrning: Cannot load MemCache")
 		return
 	}
 
-	for i := range users {
-		cacheUser[users[i].Email] = users[i]
+	for i := range caches {
+		cacheUser[caches[i].Email] = model.User{}
 	}
 }
