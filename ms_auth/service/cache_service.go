@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"log"
 	"ms_auth/infrastructure"
 	"ms_auth/model"
 )
@@ -29,11 +28,4 @@ func (s *cacheService) CheckInMem(key string) (*model.User, error) {
 func (s *cacheService) AddInMem(user *model.User) {
 	data_cache := infrastructure.GetCache()
 	data_cache[user.Email] = *user
-	db := infrastructure.GetDB()
-	if err := db.Model(&model.CacheMem{}).Create(&model.CacheMem{
-		Email: user.Email,
-	}).Error; err != nil {
-		log.Println("=====> Missing in-memory")
-	}
-	// log.Println("=====> Memory:", data_cache)
 }

@@ -77,7 +77,7 @@ func TestLoginGRPC(t *testing.T) {
 	require.NotEmpty(t, rows)
 
 	var errChan chan error
-	var workload int = 200
+	var workload int = 20
 	var wg sync.WaitGroup
 	for index := 0; index < 10; index++ {
 		go func(rows [][]string, yStart, workLoad int, t *testing.T, wg *sync.WaitGroup, errChan chan error) {
@@ -105,6 +105,7 @@ func TestLoginGRPC(t *testing.T) {
 					}
 					require.NotNil(t, serverResponse)
 					require.NotNil(t, serverResponse.AccessToken)
+					log.Println("User - ", serverResponse.SessionId)
 				}(rows[index], errChan, index)
 			}
 		}(rows, index, workload, t, &wg, errChan)

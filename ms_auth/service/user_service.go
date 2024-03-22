@@ -25,7 +25,7 @@ func (s *userService) Login(email string, password string) (*model.User, error) 
 	if isCaching != nil {
 		goto INDB
 	}
-	log.Printf("=> Request Login From: %v\n", dataMem.ID)
+	log.Printf("=> Login success - %v\n", dataMem.ID)
 	return dataMem, nil
 
 INDB:
@@ -39,7 +39,7 @@ INDB:
 	}
 
 	s.AddInMem(user)
-	log.Printf("=> Request Login From: %v\n", user.ID)
+	log.Printf("Login success - %v\n", user.ID)
 	return user, nil
 }
 
@@ -69,7 +69,7 @@ func NewUserService() UserService {
 func ComparePassword(password string, hash string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if err != nil {
-		return errors.New("Password not match")
+		return errors.New("password not match")
 	}
 	return nil
 }
