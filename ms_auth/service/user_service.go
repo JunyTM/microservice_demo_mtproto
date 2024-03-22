@@ -5,6 +5,7 @@ import (
 	"log"
 	"ms_auth/infrastructure"
 	"ms_auth/model"
+	"sync"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -29,6 +30,7 @@ func (s *userService) Login(email string, password string) (*model.User, error) 
 	return dataMem, nil
 
 INDB:
+	var mu sync.Mutex
 	var user *model.User
 	if err := s.db.Model(&model.User{}).Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, errors.New("=> User not found in database")
@@ -37,8 +39,9 @@ INDB:
 	if err := ComparePassword(password, user.Password); err != nil {
 		return nil, errors.New("=> Password not match")
 	}
-
+	mu.Lock()
 	s.AddInMem(user)
+	mu.Unlock()
 	log.Printf("Login success - %v\n", user.ID)
 	return user, nil
 }

@@ -15,6 +15,7 @@ func ConnectDatabases() {
 	if err != nil {
 		log.Println("failed to connect database")
 	}
+	log.Println("Connect to database successfully")
 }
 
 func MigrateDatabases(isMigrate bool) {
@@ -27,6 +28,6 @@ func MigrateDatabases(isMigrate bool) {
 		&model.CacheMem{},
 	)
 	if err != nil {
-		log.Println("failed MigrateDatabases:",err)
+		log.Println("failed MigrateDatabases:", err)
 	}
 }

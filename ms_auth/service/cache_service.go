@@ -9,7 +9,7 @@ import (
 type cacheService struct{}
 
 func (s *cacheService) CheckInMem(key string) (*model.User, error) {
-	dataCache := infrastructure.GetCache()
+	dataCache := *infrastructure.GetCache()
 	if dataCache == nil {
 		return nil, errors.New("missing cache key")
 	}
@@ -26,6 +26,6 @@ func (s *cacheService) CheckInMem(key string) (*model.User, error) {
 }
 
 func (s *cacheService) AddInMem(user *model.User) {
-	data_cache := infrastructure.GetCache()
+	data_cache := *infrastructure.GetCache()
 	data_cache[user.Email] = *user
 }

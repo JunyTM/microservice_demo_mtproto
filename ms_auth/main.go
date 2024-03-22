@@ -55,23 +55,26 @@ func (s *Server_GRPC_MS_Auth) CreateUser(ctx context.Context, in *pb.CreateUserM
 func main() {
 
 	defer func() {
-		caches := infrastructure.GetCache()
-		db := infrastructure.GetDB()
+		if r := recover(); r != nil {
 
-		// Clear database cache
-		if err := db.Delete(&model.CacheMem{}, "id IS NOT NULL").Error; err != nil {
-			log.Println("==> Err clear db cache")
-		}
+			caches := *infrastructure.GetCache()
+			db := infrastructure.GetDB()
 
-		temp := []model.CacheMem{}
-		for cache := range caches {
-			temp = append(temp, model.CacheMem{
-				Email: cache,
-			})
-		}
+			// Clear database cache
+			if err := db.Delete(&model.CacheMem{}, "id IS NOT NULL").Error; err != nil {
+				log.Println("==> Err clear db cache")
+			}
 
-		if err := db.Model(&model.CacheMem{}).Create(&temp).Error; err != nil {
-			log.Println("=====> Missing in-memory")
+			temp := []model.CacheMem{}
+			for cache := range caches {
+				temp = append(temp, model.CacheMem{
+					Email: cache,
+				})
+			}
+
+			if err := db.Model(&model.CacheMem{}).Create(&temp).Error; err != nil {
+				log.Println("=====> Missing in-memory")
+			}
 		}
 	}()
 

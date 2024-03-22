@@ -4,17 +4,19 @@ import (
 	"flag"
 	"log"
 	"ms_auth/model"
+	"sync"
 
 	"gorm.io/gorm"
 )
 
 const (
-	msql_dns = "users:147563@tcp(localhost:3306)/app_auth?charset=utf8mb4&parseTime=True&loc=Local"
+	msql_dns = "users:147563@tcp(authen_db:3306)/app_auth?charset=utf8mb4&parseTime=True&loc=Local"
 )
 
 var (
 	db        *gorm.DB
 	cacheUser map[string]model.User
+	cachMutex sync.Mutex
 )
 
 func init() {
@@ -40,8 +42,10 @@ func GetDB() *gorm.DB {
 	return db
 }
 
-func GetCache() map[string]model.User {
-	return cacheUser
+func GetCache() *map[string]model.User {
+	cachMutex.Lock()
+	defer cachMutex.Unlock()
+	return &cacheUser
 }
 
 func loadMemoryCache(isLoadCache bool) {

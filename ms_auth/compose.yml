@@ -1,17 +1,10 @@
 version: "3.3"
 
-services:
-  ms_auth:
-    build:
-      dockerfile: Dockerfile
-      context: .
-    depends_on:
-      - my_sql
-    networks:
-      - api-networks
-    ports:
-      - "9090:9090"
+networks:
+  api-networks:
+    driver: bridge
 
+services:
   my_sql:
     image: mysql
     container_name: authen_db
@@ -25,7 +18,15 @@ services:
     networks:
       - api-networks
 
-networks:
-  api-networks:
-    driver: bridge
+  ms_auth:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    depends_on:
+      - my_sql
+    ports:
+      - "9090:9090"
+    networks:
+      - api-networks
+
 # docker run --name my_sql -e MYSQL_ROOT_PASSWORD=147563 -e MYSQL_PASSWORD=147563 -e MYSQL_USER=users -e MYSQL_DATABASE=app_auth -p 3306:3306  -d mysql:latest
