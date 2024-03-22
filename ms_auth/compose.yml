@@ -5,13 +5,13 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
-
     depends_on:
       - my_sql
     networks:
       - api-networks
     ports:
       - "9090:9090"
+
   my_sql:
     image: mysql
     container_name: authen_db
@@ -20,8 +20,8 @@ services:
       - MYSQL_DATABASE=app_auth
       - MYSQL_USER=users
       - MYSQL_PASSWORD=147563
-    # ports:
-    #   - "3306:3306"
+    ports:
+      - "3306:3306"
     networks:
       - api-networks
 

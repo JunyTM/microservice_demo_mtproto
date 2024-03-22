@@ -1,6 +1,7 @@
 package infrastructure
 
 import (
+	"log"
 	"ms_auth/model"
 
 	"gorm.io/driver/mysql"
@@ -12,7 +13,7 @@ func ConnectDatabases() {
 	var err error
 	db, err = gorm.Open(mysql.Open(msql_dns), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		log.Println("failed to connect database")
 	}
 }
 
@@ -26,6 +27,6 @@ func MigrateDatabases(isMigrate bool) {
 		&model.CacheMem{},
 	)
 	if err != nil {
-		panic(err)
+		log.Println("failed MigrateDatabases:",err)
 	}
 }

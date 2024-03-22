@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	msql_dns = "users:147563@tcp(authen_db:3306)/app_auth?charset=utf8mb4&parseTime=True&loc=Local"
+	msql_dns = "users:147563@tcp(localhost:3306)/app_auth?charset=utf8mb4&parseTime=True&loc=Local"
 )
 
 var (
