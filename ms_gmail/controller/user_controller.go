@@ -4,15 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"ms_gmail/model"
 	"ms_gmail/pb"
 	"ms_gmail/service"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-chi/render"
+	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -21,7 +24,10 @@ type UserController interface {
 	Login(w http.ResponseWriter, r *http.Request)
 	Register(w http.ResponseWriter, r *http.Request)
 	GenerateUsers(w http.ResponseWriter, r *http.Request)
+	LoadUsersGenerated(w http.ResponseWriter, r *http.Request)
 }
+
+var serverHost string =  "ms_auth:9090" 
 
 type userController struct {
 	userWorker service.ExcelWorkerInterface
@@ -37,7 +43,7 @@ func (c *userController) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Contact to server auth
-	conn, err := grpc.Dial("0.0.0.0:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(serverHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -70,7 +76,7 @@ func (c *userController) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Contact to server auth
-	conn, err := grpc.Dial("0.0.0.0:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(serverHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -131,6 +137,89 @@ func (c *userController) GenerateUsers(w http.ResponseWriter, r *http.Request) {
 		Data:    nil,
 		Success: true,
 		Message: "Make data successful",
+	}
+	render.JSON(w, r, res)
+}
+
+func (c *userController) LoadUsersGenerated(w http.ResponseWriter, r *http.Request) {
+	workLoad := r.URL.Query().Get("workload")
+	if workLoad == "" {
+		BadRequest(w, r, errors.New("param err: workers or workload must be specified"))
+		return
+	}
+
+	workLoadInt, err := strconv.Atoi(workLoad)
+	if err != nil {
+		InternalServerError(w, r, err)
+		return
+	}
+
+	f, err := excelize.OpenFile("excel/DataBenchmark.xlsx")
+	if err != nil {
+		InternalServerError(w, r, err)
+		return
+	}
+
+	// Get all the rows in the Sheet1.
+	rows, err := f.GetRows("Sheet1")
+	if err != nil {
+		InternalServerError(w, r, err)
+		return
+	}
+
+	var wg sync.WaitGroup
+	errChan := make(chan string)
+	for index := 0; index < 10; index++ {
+		wg.Add(1)
+		go func(rows [][]string, yStart, workLoad int, wg *sync.WaitGroup, errChan chan string) {
+			for index := yStart * workLoad; index < (yStart+1)*workLoad; index++ {
+				// Bypass the column name
+				if index == 0 {
+					continue
+				} else if index > len(rows) {
+					break
+				}
+
+				// Contact to server auth
+				conn, err := grpc.Dial(serverHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
+				if err != nil {
+					log.Fatalf("did not connect: %v", err)
+				}
+				defer conn.Close()
+				clientAuthRPC := pb.NewAuthenClient(conn)
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+
+				// 2 - the column of email, and password default is '123456'
+				serverResponse, err := clientAuthRPC.CreateUser(ctx, &pb.CreateUserMessage{Name: rows[index][1], Email: rows[index][2], Password: "123456"})
+				if err != nil {
+					if err == grpc.ErrClientConnTimeout {
+						// log.Printf("===> error timeout while login Id = %d", index)
+						errChan <- fmt.Sprintf("=> error timeout while login Id = %d", index)
+						break
+					}
+				}
+				if serverResponse == nil {
+					errChan <- fmt.Sprintf("=> error timeout while login Id = %d", index)
+				}
+			}
+			wg.Done()
+		}(rows, index, workLoadInt, &wg, errChan)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	errors := []string{}
+	for err := range errChan {
+		errors = append(errors, err)
+	}
+
+	res := model.Response{
+		Data:    errors,
+		Success: true,
+		Message: "Request finished",
 	}
 	render.JSON(w, r, res)
 }

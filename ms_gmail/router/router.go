@@ -30,5 +30,7 @@ func Router() http.Handler {
 	r.Post("/user/resgister", userController.Register)
 	r.Post("/user/login", userController.Login)
 	r.Get("/user/gen-data", userController.GenerateUsers)
+
+	r.Get("/test/load-gen-data", userController.LoadUsersGenerated)
 	return r
 }

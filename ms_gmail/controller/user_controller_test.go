@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"ms_gmail/pb"
 	"sync"
@@ -37,10 +36,12 @@ func TestRegisterGRPC(t *testing.T) {
 	for index := 0; index < 10; index++ {
 		wg.Add(1)
 		go func(rows [][]string, yStart, workLoad int, t *testing.T, wg *sync.WaitGroup) {
-			for index := yStart * workLoad; index < (yStart+1)*workLoad || index >= len(rows); index++ {
+			for index := yStart * workLoad; index < (yStart+1)*workLoad; index++ {
 				// Bypass the column name
 				if index == 0 {
 					continue
+				} else if index > len(rows) {
+					break
 				}
 
 				// Contact to server auth
@@ -70,54 +71,39 @@ func TestRegisterGRPC(t *testing.T) {
 	wg.Wait()
 }
 
-func TestLoginGRPC(t *testing.T) {
+func TestLoging(t *testing.T) {
 	// Get all the rows in the Sheet1.
 	rows, err := f.GetRows("Sheet1")
 	require.NoError(t, err)
 	require.NotEmpty(t, rows)
 
-	var errChan chan error
-	var workload int = 20
 	var wg sync.WaitGroup
-	for index := 0; index < 10; index++ {
-		go func(rows [][]string, yStart, workLoad int, t *testing.T, wg *sync.WaitGroup, errChan chan error) {
-			for index := yStart * workLoad; index < (yStart+1)*workLoad || index >= len(rows); index++ {
-				// Bypass the column name
-				if index == 0 {
-					continue
-				}
-				go func(user []string, errChan chan<- error, index int) {
-					// Contact to server auth
-					conn, err := grpc.Dial("0.0.0.0:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
-					if err != nil {
-						log.Fatalf("did not connect: %v", err)
-					}
-					defer conn.Close()
-					clientAuthRPC := pb.NewAuthenClient(conn)
-
-					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-					defer cancel()
-
-					// 2 - the column of email, and password default is '123456'
-					serverResponse, err := clientAuthRPC.Login(ctx, &pb.LoginMessage{Email: user[2], Password: "123456"})
-					if err != nil {
-						errChan <- fmt.Errorf("====> User time out - number: %d / err: %v", index, err)
-					}
-					require.NotNil(t, serverResponse)
-					require.NotNil(t, serverResponse.AccessToken)
-					log.Println("User - ", serverResponse.SessionId)
-				}(rows[index], errChan, index)
+	for index := 1; index <= len(rows)/10; index++ {
+		wg.Add(1)
+		go func(user []string, wg *sync.WaitGroup, index int) {
+			// Contact to server auth
+			conn, err := grpc.Dial("0.0.0.0:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
+			if err != nil {
+				log.Fatalf("did not connect: %v", err)
 			}
-		}(rows, index, workload, t, &wg, errChan)
+			defer conn.Close()
+			clientAuthRPC := pb.NewAuthenClient(conn)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second) // Wait for 10sec timeout
+			defer cancel()
+			// 2 - the column of email, and password default is '123456'
+			serverResponse, err := clientAuthRPC.Login(ctx, &pb.LoginMessage{Email: user[2], Password: "123456"})
+			if err != nil {
+				if err == grpc.ErrClientConnTimeout {
+					log.Printf("====> User time out - number: %d / err: %v\n", index, err)
+				} else {
+					log.Printf("====> RPC error - number: %d / err: %v\n", index, err)
+				}
+			}
+			require.NotNil(t, serverResponse)
+			require.NotNil(t, serverResponse.AccessToken)
+			log.Println("User - ", serverResponse.SessionId)
+			wg.Done()
+		}(rows[index], &wg, index)
 	}
-
-	for {
-		select {
-		case err := <-errChan:
-			log.Printf("===> error timeout while login Id = %v", err)
-			break
-		default:
-		}
-	}
-
+	wg.Wait()
 }

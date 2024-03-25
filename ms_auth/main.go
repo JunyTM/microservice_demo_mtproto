@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"ms_auth/infrastructure"
-	"ms_auth/model"
 	"ms_auth/pb"
 	"ms_auth/service"
 	"net"
@@ -37,7 +35,7 @@ func (s *Server_GRPC_MS_Auth) Login(ctx context.Context, in *pb.LoginMessage) (*
 }
 
 func (s *Server_GRPC_MS_Auth) CreateUser(ctx context.Context, in *pb.CreateUserMessage) (*pb.CreateUserResponse, error) {
-	log.Printf("=> Request register: %v\n", in.GetName())
+	// log.Printf("=> Request register: %v\n", in.GetName())
 	result, err := s.userService.CreateUser(in.GetName(), in.GetEmail(), in.GetPassword())
 	if err != nil {
 		return nil, fmt.Errorf("=> Error: %v", err)
@@ -53,30 +51,29 @@ func (s *Server_GRPC_MS_Auth) CreateUser(ctx context.Context, in *pb.CreateUserM
 }
 
 func main() {
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		log.Printf("Recovered from panic: %v\n", r)
+	// 	}
+	// 	caches := *infrastructure.GetCache()
+	// 	db := infrastructure.GetDB()
 
-	defer func() {
-		if r := recover(); r != nil {
+	// 	// Clear database cache
+	// 	if err := db.Delete(&model.CacheMem{}, "id IS NOT NULL").Error; err != nil {
+	// 		log.Println("==> Err clear db cache")
+	// 	}
 
-			caches := *infrastructure.GetCache()
-			db := infrastructure.GetDB()
+	// 	temp := []model.CacheMem{}
+	// 	for cache := range caches {
+	// 		temp = append(temp, model.CacheMem{
+	// 			Email: cache,
+	// 		})
+	// 	}
 
-			// Clear database cache
-			if err := db.Delete(&model.CacheMem{}, "id IS NOT NULL").Error; err != nil {
-				log.Println("==> Err clear db cache")
-			}
-
-			temp := []model.CacheMem{}
-			for cache := range caches {
-				temp = append(temp, model.CacheMem{
-					Email: cache,
-				})
-			}
-
-			if err := db.Model(&model.CacheMem{}).Create(&temp).Error; err != nil {
-				log.Println("=====> Missing in-memory")
-			}
-		}
-	}()
+	// 	if err := db.Model(&model.CacheMem{}).Create(&temp).Error; err != nil {
+	// 		log.Println("=====> Missing in-memory")
+	// 	}
+	// }()
 
 	lis, err := net.Listen("tcp", ":9090")
 	if err != nil {

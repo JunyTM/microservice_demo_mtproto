@@ -18,10 +18,6 @@ func (s *cacheService) CheckInMem(key string) (*model.User, error) {
 	if !ok {
 		return nil, errors.New("no email in memory")
 	}
-	db := infrastructure.GetDB()
-	if err := db.Model(&model.User{}).Find(&user).Error; err != nil {
-		return nil, err
-	}
 	return &user, nil
 }
 

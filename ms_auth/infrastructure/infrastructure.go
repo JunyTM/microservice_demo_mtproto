@@ -27,14 +27,14 @@ func init() {
 	ConnectDatabases()
 
 	isMigrate := flag.Bool("db", false, "Migrate database")
-	isLoadCache := flag.Bool("cache", true, "Load cache")
+	// isLoadCache := flag.Bool("cache", true, "Load cache")
 	flag.Parse()
 
 	// migrate database
 	MigrateDatabases(*isMigrate)
 
 	// load cache
-	loadMemoryCache(*isLoadCache)
+	// loadMemoryCache(*isLoadCache)
 }
 
 // GetDB return the database connection
@@ -48,7 +48,7 @@ func GetCache() *map[string]model.User {
 	return &cacheUser
 }
 
-func loadMemoryCache(isLoadCache bool) {
+func LoadMemoryCache(isLoadCache bool) {
 	if !isLoadCache {
 		return
 	}

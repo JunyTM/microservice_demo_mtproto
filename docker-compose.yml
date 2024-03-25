@@ -1,0 +1,44 @@
+version: "3.3"
+
+networks:
+  api-networks:
+    driver: bridge
+
+services:
+  my_sql:
+    image: mysql
+    container_name: authen_db
+    environment:
+      - MYSQL_ROOT_PASSWORD=147563
+      - MYSQL_DATABASE=app_auth
+      - MYSQL_USER=users
+      - MYSQL_PASSWORD=147563
+    ports:
+      - "3306:3306"
+    networks:
+      - api-networks
+
+  ms_auth:
+    image: kimmanh/vccorp:ms_auth
+    container_name: ms_auth
+    build:
+      dockerfile: Dockerfile
+      context: ./ms_auth
+    depends_on:
+      - my_sql
+    ports:
+      - "9090:9090"
+    networks:
+      - api-networks
+
+  ms_gmail:
+    image: kimmanh/vccorp:ms_gmail
+    build:
+      dockerfile: Dockerfile
+      context: ./ms_gmail
+    container_name: ms_gmail
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - api-networks

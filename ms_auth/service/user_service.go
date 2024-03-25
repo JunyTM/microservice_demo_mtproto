@@ -22,15 +22,18 @@ type userService struct {
 }
 
 func (s *userService) Login(email string, password string) (*model.User, error) {
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
 	dataMem, isCaching := s.CheckInMem(email)
 	if isCaching != nil {
 		goto INDB
 	}
-	log.Printf("=> Login success - %v\n", dataMem.ID)
+	log.Printf("=> Login success in mem - %v\n", dataMem.ID)
 	return dataMem, nil
 
 INDB:
-	var mu sync.Mutex
 	var user *model.User
 	if err := s.db.Model(&model.User{}).Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, errors.New("=> User not found in database")
@@ -39,10 +42,8 @@ INDB:
 	if err := ComparePassword(password, user.Password); err != nil {
 		return nil, errors.New("=> Password not match")
 	}
-	mu.Lock()
 	s.AddInMem(user)
-	mu.Unlock()
-	log.Printf("Login success - %v\n", user.ID)
+	log.Printf("Login success in db - %v\n", user.ID)
 	return user, nil
 }
 
