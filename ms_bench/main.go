@@ -29,15 +29,16 @@ func main() {
 	for index, row := range rows {
 		if index == 0 {
 			continue
-		} else if index == 200 {
+		} else if index == 2000 {
 			break
 		}
 		// Assuming the first column contains usernames and the second column contains passwords
 		if len(row) >= 2 {
 			target := vegeta.Target{
 				Method: "POST",
-				URL:    "http://localhost:8080/user/login", // Adjust URL as needed
-				Body:   []byte(fmt.Sprintf(`{"email": "%s", "password": "%s"}`, row[2], row[3])),
+				// URL:    "http://localhost:8080/user/login", // Adjust URL as needed
+				URL:  "http://10.8.12.212:8080/user/login",
+				Body: []byte(fmt.Sprintf(`{"email": "%s", "password": "%s"}`, row[2], row[3])),
 			}
 			targets = append(targets, target)
 		}
@@ -50,7 +51,7 @@ func main() {
 	attacker := vegeta.NewAttacker()
 
 	// Create a new rate limiter to control the request rate (adjust as needed)
-	rate := vegeta.Rate{Freq: 1000, Per: time.Second}
+	rate := vegeta.Rate{Freq: 20, Per: time.Second} // 2 request/s
 
 	// Initialize metrics
 	var metrics vegeta.Metrics
@@ -77,7 +78,7 @@ func main() {
 	fmt.Printf("Rate: %f\n", metrics.Rate)
 	fmt.Printf("Success: %f%%\n", metrics.Success*100)
 	fmt.Printf("Status Codes: %v\n", metrics.StatusCodes)
-	fmt.Printf("Errors: %d\n", metrics.Errors)
+	fmt.Printf("Errors: %v\n", metrics.Errors)
 
 	// Output attack latency distribution
 	fmt.Println("Latencies:")

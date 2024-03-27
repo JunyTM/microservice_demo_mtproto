@@ -7,8 +7,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-const alphabet = "abcdefghijklmnopqrstuvwxy"
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }

@@ -26,11 +26,16 @@ func Router() http.Handler {
 		// MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
+	// Ping returns
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("pong"))
+    })
+
 	userController := controller.NewUserController()
 	r.Post("/user/resgister", userController.Register)
 	r.Post("/user/login", userController.Login)
+	r.Get("/user/profile", userController.GetUserProfile)
 	r.Get("/user/gen-data", userController.GenerateUsers)
-
 	r.Get("/test/load-gen-data", userController.LoadUsersGenerated)
 	return r
 }

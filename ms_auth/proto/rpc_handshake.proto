@@ -1,0 +1,14 @@
+syntax="proto3";
+
+package pb;
+
+option go_package = "ms_auth/pb";
+
+message HandshakeRequest {
+    string publicKey = 1;
+}
+
+message HandshakeResponse {
+    string authKey = 1;
+    string publicKey = 2;
+}

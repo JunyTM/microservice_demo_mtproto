@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"ms_gmail/infrastructure"
 	"ms_gmail/model"
 	"ms_gmail/pb"
 	"ms_gmail/service"
@@ -23,11 +24,13 @@ import (
 type UserController interface {
 	Login(w http.ResponseWriter, r *http.Request)
 	Register(w http.ResponseWriter, r *http.Request)
+	GetUserProfile(w http.ResponseWriter, r *http.Request)
 	GenerateUsers(w http.ResponseWriter, r *http.Request)
 	LoadUsersGenerated(w http.ResponseWriter, r *http.Request)
 }
 
-var serverHost string =  "ms_auth:9090" 
+// var serverHost string =  "ms_auth:9090"
+var serverHost string = infrastructure.GetServerHost()
 
 type userController struct {
 	userWorker service.ExcelWorkerInterface
@@ -97,6 +100,11 @@ func (c *userController) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	render.JSON(w, r, httpResponse)
 }
+
+func (c *userController) GetUserProfile(w http.ResponseWriter, r *http.Request) {
+	
+}
+
 func (c *userController) GenerateUsers(w http.ResponseWriter, r *http.Request) {
 	/*
 		workerCount - the number of workers in worker pool.

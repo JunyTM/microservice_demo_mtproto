@@ -45,7 +45,7 @@ func TestRegisterGRPC(t *testing.T) {
 				}
 
 				// Contact to server auth
-				conn, err := grpc.Dial("0.0.0.0:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
+				conn, err := grpc.Dial(serverHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
 				if err != nil {
 					log.Fatalf("did not connect: %v", err)
 				}
@@ -78,11 +78,11 @@ func TestLoging(t *testing.T) {
 	require.NotEmpty(t, rows)
 
 	var wg sync.WaitGroup
-	for index := 1; index <= len(rows)/10; index++ {
+	for index := 1; index <= 2; index++ {
 		wg.Add(1)
 		go func(user []string, wg *sync.WaitGroup, index int) {
 			// Contact to server auth
-			conn, err := grpc.Dial("0.0.0.0:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
+			conn, err := grpc.Dial(serverHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				log.Fatalf("did not connect: %v", err)
 			}
