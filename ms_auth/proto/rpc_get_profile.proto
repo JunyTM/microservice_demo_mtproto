@@ -1,0 +1,9 @@
+syntax="proto3";
+
+package pb;
+
+option go_package = "ms_auth/pb";
+
+message GetUserRequest {
+    string userId = 1;
+}

@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type AuthenClient interface {
 	CreateUser(ctx context.Context, in *CreateUserMessage, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	Login(ctx context.Context, in *LoginMessage, opts ...grpc.CallOption) (*LoginResponse, error)
+	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
 	Handshake(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
 }
 
@@ -53,6 +54,15 @@ func (c *authenClient) Login(ctx context.Context, in *LoginMessage, opts ...grpc
 	return out, nil
 }
 
+func (c *authenClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error) {
+	out := new(User)
+	err := c.cc.Invoke(ctx, "/pb.Authen/GetUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authenClient) Handshake(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error) {
 	out := new(HandshakeResponse)
 	err := c.cc.Invoke(ctx, "/pb.Authen/Handshake", in, out, opts...)
@@ -68,6 +78,7 @@ func (c *authenClient) Handshake(ctx context.Context, in *HandshakeRequest, opts
 type AuthenServer interface {
 	CreateUser(context.Context, *CreateUserMessage) (*CreateUserResponse, error)
 	Login(context.Context, *LoginMessage) (*LoginResponse, error)
+	GetUser(context.Context, *GetUserRequest) (*User, error)
 	Handshake(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
 	mustEmbedUnimplementedAuthenServer()
 }
@@ -81,6 +92,9 @@ func (UnimplementedAuthenServer) CreateUser(context.Context, *CreateUserMessage)
 }
 func (UnimplementedAuthenServer) Login(context.Context, *LoginMessage) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedAuthenServer) GetUser(context.Context, *GetUserRequest) (*User, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
 }
 func (UnimplementedAuthenServer) Handshake(context.Context, *HandshakeRequest) (*HandshakeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Handshake not implemented")
@@ -134,6 +148,24 @@ func _Authen_Login_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Authen_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthenServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Authen/GetUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthenServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Authen_Handshake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HandshakeRequest)
 	if err := dec(in); err != nil {
@@ -166,6 +198,10 @@ var Authen_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _Authen_Login_Handler,
+		},
+		{
+			MethodName: "GetUser",
+			Handler:    _Authen_GetUser_Handler,
 		},
 		{
 			MethodName: "Handshake",

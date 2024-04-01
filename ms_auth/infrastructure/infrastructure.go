@@ -1,6 +1,7 @@
 package infrastructure
 
 import (
+	"crypto/rsa"
 	"flag"
 	"log"
 	"ms_auth/model"
@@ -18,6 +19,12 @@ var (
 	db        *gorm.DB
 	cacheUser map[string]model.User
 	cachMutex sync.Mutex
+
+	publicKey  string
+	privateKey *rsa.PrivateKey
+
+	authKey         string = "QmJlMzUxNTAyMzEyNDY4OTc5MTM1OWM0NzExNTIwNDUzNjg3NDMxMTQzMjU3MjY5NTU0NTI1NzI3OTY4NDUyMQ=="
+	clientPublicKey string
 )
 
 func init() {
@@ -36,6 +43,7 @@ func init() {
 
 	// load cache
 	// loadMemoryCache(*isLoadCache)
+	loadKeyPemParam()
 }
 
 // GetDB return the database connection
@@ -63,4 +71,20 @@ func LoadMemoryCache(isLoadCache bool) {
 	for i := range caches {
 		cacheUser[caches[i].Email] = model.User{}
 	}
+}
+
+func GetAuthKey() string {
+	return authKey
+}
+
+func GetServerPublicKey() string {
+	return publicKey
+}
+
+func GetServerPrivateKey() *rsa.PrivateKey {
+	return privateKey
+}
+
+func SetClientPublicKey(key string) {
+	clientPublicKey = key
 }

@@ -1,11 +1,15 @@
 package utils
 
-import "github.com/gofrs/uuid"
+import (
+	"crypto/rand"
+	"io"
+)
 
-func GenAuthKey() (string, error) {
-	key, err := uuid.NewV4()
-	if err != nil {
-		return "", err
+func GenSalt(n int) []byte {
+	nonce := make([]byte, n)
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		panic(err.Error())
 	}
-	return key.String(), nil
+	return (nonce)
 }
+

@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"ms_auth/infrastructure"
 	"ms_auth/pb"
 	"ms_auth/service"
 )
@@ -10,6 +11,8 @@ import (
 type GRPC_MSAuth_Interface interface {
 	Login(ctx context.Context, in *pb.LoginMessage) (*pb.LoginResponse, error)
 	CreateUser(ctx context.Context, in *pb.CreateUserMessage) (*pb.CreateUserResponse, error)
+	Handshake(ctx context.Context, in *pb.HandshakeRequest) (*pb.HandshakeResponse, error)
+	GetUser(ctx context.Context, in *pb.GetUserRequest) (*pb.User, error)
 }
 
 type Server_GRPC_MS_Auth struct {
@@ -47,6 +50,15 @@ func (s *Server_GRPC_MS_Auth) CreateUser(ctx context.Context, in *pb.CreateUserM
 			Email:    result.Email,
 			Password: result.Password,
 		},
+	}, nil
+}
+
+func (s *Server_GRPC_MS_Auth) Handshake(ctx context.Context, in *pb.HandshakeRequest) (*pb.HandshakeResponse, error) {
+	infrastructure.SetClientPublicKey(in.GetPublicKey())
+
+	return &pb.HandshakeResponse{
+		AuthKey:   infrastructure.GetAuthKey(),
+		PublicKey: infrastructure.GetServerPublicKey(),
 	}, nil
 }
 

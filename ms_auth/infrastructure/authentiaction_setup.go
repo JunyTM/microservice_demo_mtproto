@@ -1,25 +1,35 @@
 package infrastructure
 
 import (
-	"crypto/sha256"
 	"crypto/x509"
-	"fmt"
+	"encoding/pem"
+	"io/ioutil"
+	"log"
+	"reflect"
 )
 
 const Algorithm = "HS256"
 
-// Authen key algorithm - Used for regist Client TPC
-func GenerateAuthKeyFromPublicKey(publicKey []byte) (string, error) {
-	//  Generate the auth key from the public key
-	pubKey, err := x509.ParsePKCS1PublicKey(publicKey)
+func loadKeyPemParam() error {
+	// Load privateKey
+	privateReader, err := ioutil.ReadFile("./private.pem")
 	if err != nil {
-		return "", fmt.Errorf("could not parse public key: %v", err)
+		log.Println("No RSA private pem file: ", err)
+		return err
 	}
 
-	// Marshal the public key to a byte slice
-	pubKeyBytes := x509.MarshalPKCS1PublicKey(pubKey)
+	privatePem, _ := pem.Decode(privateReader)
+	privateKey, err = x509.ParsePKCS1PrivateKey(privatePem.Bytes)
 
-	// Calculate SHA256 hash
-	authKey := sha256.Sum256(pubKeyBytes)
-	return string(authKey[:]), nil
+	// Load publicKey
+	publicReader, err := ioutil.ReadFile("./public.pem")
+	if err != nil {
+		log.Println("No RSA public pem file: ", err)
+		return err
+	}
+
+	publicPem, _ := pem.Decode(publicReader)
+	publicKey_Any, _ := x509.ParsePKIXPublicKey(publicPem.Bytes)
+	publicKey = reflect.ValueOf(publicKey_Any).String()
+	return nil
 }
