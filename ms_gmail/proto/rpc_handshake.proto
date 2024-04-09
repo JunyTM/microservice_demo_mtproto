@@ -2,7 +2,7 @@ syntax="proto3";
 
 package pb;
 
-option go_package = "ms_auth/pb";
+option go_package = "ms_gmail/pb";
 
 message HandshakeRequest {
     string publicKey = 1;

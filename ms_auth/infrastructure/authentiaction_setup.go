@@ -12,7 +12,7 @@ const Algorithm = "HS256"
 
 func loadKeyPemParam() error {
 	// Load privateKey
-	privateReader, err := ioutil.ReadFile("./private.pem")
+	privateReader, err := ioutil.ReadFile("./infrastructure/private.pem")
 	if err != nil {
 		log.Println("No RSA private pem file: ", err)
 		return err
@@ -22,7 +22,7 @@ func loadKeyPemParam() error {
 	privateKey, err = x509.ParsePKCS1PrivateKey(privatePem.Bytes)
 
 	// Load publicKey
-	publicReader, err := ioutil.ReadFile("./public.pem")
+	publicReader, err := ioutil.ReadFile("./infrastructure/public.pem")
 	if err != nil {
 		log.Println("No RSA public pem file: ", err)
 		return err

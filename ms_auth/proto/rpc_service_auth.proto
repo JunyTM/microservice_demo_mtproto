@@ -6,14 +6,12 @@ import "user.proto";
 import "rpc_create_user.proto";
 import "rpc_login_user.proto";
 import "rpc_handshake.proto";
-import "rpc_get_profile.proto";
 
 option go_package = "ms_auth/pb";
 
 service Authen {
     rpc CreateUser (CreateUserMessage) returns (CreateUserResponse) {};
     rpc Login (LoginMessage) returns (LoginResponse) {};
-    rpc GetUser (GetUserRequest) returns (User) {};
     rpc Handshake (HandshakeRequest) returns (HandshakeResponse) {};
 }
 

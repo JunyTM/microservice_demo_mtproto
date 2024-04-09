@@ -261,7 +261,7 @@ func NotFound(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	// http.Error(w, "Internal Server Error\n", http.StatusInternalServerError)
 	w.WriteHeader(http.StatusInternalServerError)
 	res := &model.Response{
 		Data:    nil,

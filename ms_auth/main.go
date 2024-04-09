@@ -17,6 +17,7 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterAuthenServer(s, controller.NewServer_GRPC_MS_Auth())
+	pb.RegisterEncryptedServiceServer(s, controller.NewMTProtoController())
 	log.Printf("Starting micro_auth: port - %s\n", "9090")
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v\n", err)

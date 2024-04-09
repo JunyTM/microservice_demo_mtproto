@@ -12,7 +12,6 @@ type GRPC_MSAuth_Interface interface {
 	Login(ctx context.Context, in *pb.LoginMessage) (*pb.LoginResponse, error)
 	CreateUser(ctx context.Context, in *pb.CreateUserMessage) (*pb.CreateUserResponse, error)
 	Handshake(ctx context.Context, in *pb.HandshakeRequest) (*pb.HandshakeResponse, error)
-	GetUser(ctx context.Context, in *pb.GetUserRequest) (*pb.User, error)
 }
 
 type Server_GRPC_MS_Auth struct {

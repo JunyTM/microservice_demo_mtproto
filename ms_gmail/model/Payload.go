@@ -23,3 +23,7 @@ type UserData struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type MTprotoPayload struct {
+	Message string `json:"message"`
+}

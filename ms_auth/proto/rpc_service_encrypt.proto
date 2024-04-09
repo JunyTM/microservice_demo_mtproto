@@ -1,0 +1,17 @@
+syntax="proto3";
+
+package pb;
+
+option go_package = "ms_auth/pb";
+
+message Message {
+    bytes AuthenId = 1;
+    bytes MessageKey = 2;
+    bytes SerializeData = 3;
+}
+
+service EncryptedService {
+    rpc Send(Message) returns (Message) {}
+}
+
+

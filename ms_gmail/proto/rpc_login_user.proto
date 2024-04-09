@@ -4,7 +4,7 @@ package pb;
 
 import "user.proto";
 
-option go_package = "ms_auth/pb";
+option go_package = "ms_gmail/pb";
 
 message LoginMessage {
     string email = 1;

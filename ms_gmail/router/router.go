@@ -31,11 +31,16 @@ func Router() http.Handler {
         w.Write([]byte("pong"))
     })
 
+	// Declare the handler
 	userController := controller.NewUserController()
+	mtProtoController := controller.NewMTprotoController()
+
 	r.Post("/user/resgister", userController.Register)
 	r.Post("/user/login", userController.Login)
-	r.Get("/user/profile", userController.GetUserProfile)
 	r.Get("/user/gen-data", userController.GenerateUsers)
 	r.Get("/test/load-gen-data", userController.LoadUsersGenerated)
+
+
+	r.Post("/mt/ping", mtProtoController.Send)
 	return r
 }

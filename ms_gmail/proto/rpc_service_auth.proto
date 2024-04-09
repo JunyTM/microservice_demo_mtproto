@@ -2,12 +2,12 @@ syntax= "proto3";
 
 package pb;
 
-// import "user.proto";
+import "user.proto";
 import "rpc_create_user.proto";
 import "rpc_login_user.proto";
 import "rpc_handshake.proto";
 
-option go_package = "ms_auth/pb";
+option go_package = "ms_gmail/pb";
 
 service Authen {
     rpc CreateUser (CreateUserMessage) returns (CreateUserResponse) {};
