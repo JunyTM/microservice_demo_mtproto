@@ -1,14 +1,8 @@
 package model
 
-type LoginPayload struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-type RegistPayload struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+type RequestPayload struct {
+	ObjectModel string      `json:"object"`
+	Data        interface{} `json:"data"`
 }
 
 type Response struct {
@@ -17,13 +11,8 @@ type Response struct {
 	Success bool        `json:"success"`
 }
 
-type UserData struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
+// Use to test MTProto API ping status
 type MTprotoPayload struct {
 	Message string `json:"message"`
 }
+

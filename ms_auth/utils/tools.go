@@ -4,9 +4,10 @@ import (
 	"crypto/rand"
 	"io"
 	"time"
-	
-	uuid "github.com/satori/go.uuid"
+
 	math "math/rand"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 func init() {

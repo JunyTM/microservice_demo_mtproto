@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"log"
+	// "log"
 	"ms_auth/infrastructure"
 	"ms_auth/model"
 	"sync"
@@ -30,20 +30,23 @@ func (s *userService) Login(email string, password string) (*model.User, error) 
 	if isCaching != nil {
 		goto INDB
 	}
-	log.Printf("=> Login success in mem - %v\n", dataMem.ID)
+	if err := ComparePassword(password, dataMem.Password); err != nil {
+		return nil, errors.New("Error: Password not match")
+	}
+	// log.Printf("=> Login success in mem - %v\n", dataMem.ID)
 	return dataMem, nil
 
 INDB:
 	var user *model.User
-	if err := s.db.Model(&model.User{}).Where("email = ?", email).First(&user).Error; err != nil {
-		return nil, errors.New("=> User not found in database")
+	if err := s.db.Debug().Where("email = ?", email).Find(&user).Error; err != nil {
+		return nil, errors.New("Error: User not found in database")
 	}
 
 	if err := ComparePassword(password, user.Password); err != nil {
-		return nil, errors.New("=> Password not match")
+		return nil, errors.New("Error: Password not match")
 	}
 	s.AddInMem(user)
-	log.Printf("Login success in db - %v\n", user.ID)
+	// log.Printf("=> Login success in db - %v\n", user.ID)
 	return user, nil
 }
 

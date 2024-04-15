@@ -6,11 +6,19 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
+	"encoding/binary"
 	"errors"
+	"fmt"
 	"ms_gmail/model"
+	"reflect"
+	"time"
 
 	"github.com/teamgram/proto/mtproto"
 )
+
+// =================================================================
+// Use for Encryption/Decryption message between Client and Server
+// =================================================================
 
 func ComputeAESKeyIV(authKey string, plaintext []byte) (aesKey []byte, aesIV []byte, msgKey []byte, err error) {
 	// Define x value for client-side messages (x = 0)
@@ -52,7 +60,7 @@ func ComputeAESKeyIV(authKey string, plaintext []byte) (aesKey []byte, aesIV []b
 func ComputeAESKeyIV2(authKey, msgKey []byte) (aesKey []byte, aesIV []byte, err error) {
 	// From client x = 0
 	x := 0
-	
+
 	authKeySubstr2 := []byte(authKey[x : x+36])
 	authKeySubstr3 := []byte(authKey[40+x : 40+x+36])
 
@@ -206,4 +214,230 @@ func GetAuthKeyId(authKey string) []byte {
 	authKeyBuf := []byte(authKey)
 	hash := sha1.Sum(authKeyBuf)
 	return hash[len(hash)-8:]
+}
+
+// ========================================
+// Use for ORM Message.Body/Struct type
+// ========================================
+
+func StructToBuffer(obj interface{}, objectId int32) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+	objType := reflect.TypeOf(obj)
+	objValue := reflect.ValueOf(obj)
+
+	if objType.Kind() == reflect.Ptr {
+		objType = objType.Elem()
+		objValue = objValue.Elem()
+	}
+
+	// Padding Object ID
+	err := binary.Write(&buf, binary.LittleEndian, objectId)
+	if err != nil {
+		return nil, errors.New("StructToBuffer: invalid object ID")
+	}
+
+	for i := 0; i < objType.NumField(); i++ {
+		field := objType.Field(i)
+		value := objValue.Field(i)
+
+		switch field.Type.Kind() {
+		case reflect.Struct:
+			// Handle individual fields for structs
+			for i := 0; i < value.NumField(); i++ {
+				fieldStruct := value.Field(i)
+				// Check for time.Time using techniques discussed earlier
+				var err error
+				if isTimeValue(fieldStruct) {
+					// Encode Unix nanoseconds for time.Time
+					err = binary.Write(&buf, binary.LittleEndian, fieldStruct.Interface().(time.Time).UnixNano())
+				} else {
+					err = encodeValue(&buf, fieldStruct)
+				}
+
+				if err != nil {
+					return nil, err
+				}
+			}
+
+		case reflect.Slice:
+			// Recursively encode slice elements
+			for i := 0; i < value.Len(); i++ {
+				err := encodeValue(&buf, value.Index(i))
+				if err != nil {
+					return nil, err
+				}
+			}
+
+		default:
+			err := encodeValue(&buf, value)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return &buf, nil
+}
+
+func BufferToStruct(dataBuffer []byte) (interface{}, error) {
+	buffer := bytes.NewBuffer(dataBuffer)
+	objectId, err := getObjectId(buffer)
+	if err != nil {
+		return nil, errors.New("BufferToStruct: invalid object ID")
+	}
+
+	objectModel := model.MapObjectDecode[objectId]
+	structValue := reflect.New(reflect.TypeOf(objectModel)).Elem()
+	for i := 0; i < structValue.NumField(); i++ {
+		switch structValue.Field(i).Kind() {
+		case reflect.String:
+			var strLen int32
+			err := binary.Read(buffer, binary.LittleEndian, &strLen)
+			if err != nil {
+				return nil, err
+			}
+			strData := string(buffer.Next(int(strLen)))
+			structValue.Field(i).SetString(strData)
+
+		case reflect.Int, reflect.Int32:
+			var value int32
+			err := binary.Read(buffer, binary.LittleEndian, &value)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Field(i).SetInt(int64(value))
+
+		case reflect.Int64:
+			var value int64
+			err := binary.Read(buffer, binary.LittleEndian, &value)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Field(i).SetInt(value)
+
+		case reflect.Uint, reflect.Uint32:
+			var value uint32
+			err := binary.Read(buffer, binary.LittleEndian, &value)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Field(i).SetUint(uint64(value))
+
+		case reflect.Uint64:
+			var value uint64
+			err := binary.Read(buffer, binary.LittleEndian, &value)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Field(i).SetUint(value)
+
+		case reflect.Bool:
+			var value bool
+			err := binary.Read(buffer, binary.LittleEndian, &value)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Field(i).SetBool(value)
+
+		case reflect.Float32:
+			var value float32
+			err := binary.Read(buffer, binary.LittleEndian, &value)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Field(i).SetFloat(float64(value))
+
+		case reflect.Float64:
+			var value float64
+			err := binary.Read(buffer, binary.LittleEndian, &value)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Field(i).SetFloat(value)
+
+		case reflect.Struct:
+		case reflect.Slice:
+
+		default:
+			return nil, fmt.Errorf("=> Convert Error: Unsupported type %v", structValue.Field(i).Kind())
+		}
+	}
+	return structValue.Interface(), nil
+}
+
+func isTimeValue(value reflect.Value) bool {
+	return value.Type().String() == "time.Time"
+}
+
+func encodeValue(buf *bytes.Buffer, value reflect.Value) error {
+	switch value.Kind() {
+	case reflect.String:
+		strBytes := []byte(value.String())
+		strLen := len(strBytes)
+		err := binary.Write(buf, binary.LittleEndian, int32(strLen))
+		if err != nil {
+			return err
+		}
+		buf.Write(strBytes)
+
+	case reflect.Int:
+		err := binary.Write(buf, binary.LittleEndian, int32(value.Int()))
+		if err != nil {
+			return err
+		}
+
+	case reflect.Int32:
+		err := binary.Write(buf, binary.LittleEndian, int32(value.Int()))
+		if err != nil {
+			return err
+		}
+
+	case reflect.Int64:
+		err := binary.Write(buf, binary.LittleEndian, value.Int())
+		if err != nil {
+			return err
+		}
+
+	case reflect.Uint, reflect.Uint32:
+		err := binary.Write(buf, binary.LittleEndian, uint32(value.Uint()))
+		if err != nil {
+			return err
+		}
+
+	case reflect.Uint64:
+		err := binary.Write(buf, binary.LittleEndian, value.Uint())
+		if err != nil {
+			return err
+		}
+
+	case reflect.Bool:
+		err := binary.Write(buf, binary.LittleEndian, value.Bool())
+		if err != nil {
+			return err
+		}
+
+	case reflect.Float32:
+		err := binary.Write(buf, binary.LittleEndian, float32(value.Float()))
+		if err != nil {
+			return err
+		}
+
+	case reflect.Float64:
+		err := binary.Write(buf, binary.LittleEndian, value.Float())
+		if err != nil {
+			return err
+		}
+
+	default:
+		return fmt.Errorf("=> Convert Error: Unsupported type %v", value.Kind())
+	}
+	return nil
+}
+
+func getObjectId(buf *bytes.Buffer) (int32, error) {
+	var objectId int32
+	err := binary.Read(buf, binary.LittleEndian, &objectId)
+	if err != nil {
+		return 0, err
+	}
+	return objectId, nil
 }

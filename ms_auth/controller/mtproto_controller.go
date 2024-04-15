@@ -2,11 +2,9 @@ package controller
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"ms_auth/infrastructure"
-	"ms_auth/model"
 	"ms_auth/pb"
+	"ms_auth/service"
 	"ms_auth/utils"
 )
 
@@ -15,6 +13,7 @@ type MTProtoController interface {
 }
 
 type mtProtoController struct {
+	basicQueryService service.BasicQueryService
 	pb.UnimplementedEncryptedServiceServer
 }
 
@@ -38,20 +37,13 @@ func (s *mtProtoController) Send(ctx context.Context, in *pb.Message) (*pb.Messa
 		return nil, err
 	}
 
-	log.Println("=> Decrypt message - Client send: ", string(data.Body))
-
-	// Reply message
-	dataServerReply := fmt.Sprintf("Server seen: %s", string(data.Body))
-	newMessage := model.MessageSending{
-		Salt:       data.Salt,
-		SessionId:  data.SessionId,
-		MessageId:  data.MessageId + 1,
-		SeqNo:      data.SeqNo + 1,
-		MessageLen: int32(len([]byte(dataServerReply))),
-		Body:       []byte(dataServerReply),
+	// Handle the case business logic of message
+	dataServerReply, err := s.basicQueryService.Authen(data)
+	if err != nil {
+		return nil, err
 	}
 
-	reply, err := utils.SerializeMarshal(newMessage)
+	reply, err := utils.SerializeMarshal(*dataServerReply)
 	if err != nil {
 		return nil, err
 	}
@@ -77,5 +69,7 @@ func (s *mtProtoController) Send(ctx context.Context, in *pb.Message) (*pb.Messa
 }
 
 func NewMTProtoController() *mtProtoController {
-	return &mtProtoController{}
+	return &mtProtoController{
+		basicQueryService: service.NewBasicQueryService(),
+	}
 }
