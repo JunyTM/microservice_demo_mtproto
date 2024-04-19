@@ -21,7 +21,7 @@ func loadHandshake() error {
 		return err
 	}
 	defer conn.Close()
-	clientAuthRPC := pb.NewAuthenClient(conn)
+	clientAuthRPC := pb.NewEncryptedServiceClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

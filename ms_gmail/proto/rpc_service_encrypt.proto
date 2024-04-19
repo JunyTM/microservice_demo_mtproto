@@ -1,6 +1,9 @@
 syntax="proto3";
 
+
 package pb;
+
+import "rpc_handshake.proto";
 
 option go_package = "ms_gmail/pb";
 
@@ -12,5 +15,6 @@ message Message {
 
 service EncryptedService {
     rpc Send(Message) returns (Message) {}
+    rpc Handshake (HandshakeRequest) returns (HandshakeResponse) {};
 }
 

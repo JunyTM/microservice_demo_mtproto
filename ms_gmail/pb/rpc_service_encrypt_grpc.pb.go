@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EncryptedServiceClient interface {
 	Send(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error)
+	Handshake(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error)
 }
 
 type encryptedServiceClient struct {
@@ -42,11 +43,21 @@ func (c *encryptedServiceClient) Send(ctx context.Context, in *Message, opts ...
 	return out, nil
 }
 
+func (c *encryptedServiceClient) Handshake(ctx context.Context, in *HandshakeRequest, opts ...grpc.CallOption) (*HandshakeResponse, error) {
+	out := new(HandshakeResponse)
+	err := c.cc.Invoke(ctx, "/pb.EncryptedService/Handshake", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EncryptedServiceServer is the server API for EncryptedService service.
 // All implementations must embed UnimplementedEncryptedServiceServer
 // for forward compatibility
 type EncryptedServiceServer interface {
 	Send(context.Context, *Message) (*Message, error)
+	Handshake(context.Context, *HandshakeRequest) (*HandshakeResponse, error)
 	mustEmbedUnimplementedEncryptedServiceServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedEncryptedServiceServer struct {
 
 func (UnimplementedEncryptedServiceServer) Send(context.Context, *Message) (*Message, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
+}
+func (UnimplementedEncryptedServiceServer) Handshake(context.Context, *HandshakeRequest) (*HandshakeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Handshake not implemented")
 }
 func (UnimplementedEncryptedServiceServer) mustEmbedUnimplementedEncryptedServiceServer() {}
 
@@ -88,6 +102,24 @@ func _EncryptedService_Send_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EncryptedService_Handshake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HandshakeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EncryptedServiceServer).Handshake(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.EncryptedService/Handshake",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EncryptedServiceServer).Handshake(ctx, req.(*HandshakeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EncryptedService_ServiceDesc is the grpc.ServiceDesc for EncryptedService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var EncryptedService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Send",
 			Handler:    _EncryptedService_Send_Handler,
+		},
+		{
+			MethodName: "Handshake",
+			Handler:    _EncryptedService_Handshake_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

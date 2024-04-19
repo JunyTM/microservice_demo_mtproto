@@ -124,7 +124,7 @@ func (s *mtProtoController) Send(w http.ResponseWriter, r *http.Request) {
 	res = model.Response{
 		Data:    object,
 		Success: true,
-		Message: "Authen success!",
+		Message: "MTProto Finished!",
 	}
 	render.JSON(w, r, res)
 }

@@ -15,6 +15,7 @@ type BasicQueryService interface {
 type basicQueryService struct{}
 
 func (s *basicQueryService) ToBuffer(payload model.RequestPayload) ([]byte, error) {
+	
 	objectModel := model.MapMessageObject[payload.ObjectModel]
 	objectModelId := model.MapMessageObjectId[payload.ObjectModel]
 	if objectModelId == 0 || objectModel == nil {
